@@ -1,0 +1,38 @@
+-- ===== Measures table: _Measures =====
+
+-- KPI Core
+[Total Revenue] = SUM(FactOrder[order_amt])
+[Total Discount] = SUM(FactOrder[discount_amt])
+[Net Revenue] = [Total Revenue] - [Total Discount]
+[Orders] = DISTINCTCOUNT(FactOrder[order_id])
+[AOV] = DIVIDE([Net Revenue], [Orders])
+[Customers] = DISTINCTCOUNT(DimCustomer[customer_id])
+
+-- Profitability
+[COGS] = SUMX(FactOrderLine, FactOrderLine[qty] * FactOrderLine[cogs])
+[Gross Profit] = [Net Revenue] - [COGS]
+[Gross Margin %] = DIVIDE([Gross Profit], [Net Revenue])
+[Return Amt] = SUM(FactReturn[return_amt])
+[Return Rate %] = DIVIDE([Return Amt], [Total Revenue])
+
+-- Plan vs Actual
+[Plan Revenue] = SUM(FactPlan[plan_revenue])
+[Plan Gross Profit] = SUM(FactPlan[plan_gross_profit])
+[Rev Variance] = [Net Revenue] - [Plan Revenue]
+[Rev Variance %] = DIVIDE([Rev Variance], [Plan Revenue])
+[GP Variance]  = [Gross Profit] - [Plan Gross Profit]
+[GP Variance %]= DIVIDE([GP Variance], [Plan Gross Profit])
+
+-- Time Intelligence (Fiscal year starts in July -> '6/30')
+[Revenue FYTD] = CALCULATE([Net Revenue], DATESYTD(DimDate[Date], "6/30"))
+[Revenue R12M] = CALCULATE([Net Revenue], DATESINPERIOD(DimDate[Date], MAX(DimDate[Date]), -12, MONTH))
+[GP R12M] = CALCULATE([Gross Profit], DATESINPERIOD(DimDate[Date], MAX(DimDate[Date]), -12, MONTH))
+
+-- Titles & Flags
+[Selected Period] = VAR ym = SELECTEDVALUE(DimDate[YearMonth]) RETURN COALESCE(ym, "All Time")
+[Selected Region] = COALESCE(SELECTEDVALUE(DimRegion[region]), "All Regions")
+[Selected Channel]= COALESCE(SELECTEDVALUE(DimChannel[channel]), "All Channels")
+[Title KPI Summary] = "Revenue vs Plan — " & [Selected Period] & " | " & [Selected Region] & " × " & [Selected Channel]
+[Is Underperforming] = IF([Rev Variance %] < -0.05, 1, 0)
+[Is Neutral] = IF([Rev Variance %] >= -0.05 && [Rev Variance %] <= 0.05, 1, 0)
+[Is Overperforming] = IF([Rev Variance %] > 0.05, 1, 0)

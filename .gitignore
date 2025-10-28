@@ -1,0 +1,7 @@
+.vscode/
+*.log
+# Power BI autosaves/backups
+~$*.*
+*.pbix.recovery
+*.pbix.autosave
+*.pbix.backup
